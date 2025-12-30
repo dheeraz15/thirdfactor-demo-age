@@ -116,18 +116,21 @@ export default function DemoPage() {
     const CaptureStep = () => {
         const [statusMessage, setStatusMessage] = useState("Initializing...");
         const [progress, setProgress] = useState(0);
+        const [stage, setStage] = useState<'align' | 'right' | 'left' | 'complete'>('align');
         const [isReady, setIsReady] = useState(false);
+        const [stepImages, setStepImages] = useState<string[]>([]);
 
         const videoRef = useRef<HTMLVideoElement>(null);
         const canvasRef = useRef<HTMLCanvasElement>(null);
 
-        // Refs for logic to avoid state dependency in loop
+        // Logic refs
         const landmarkerRef = useRef<any>(null);
         const requestRef = useRef<number>(0);
         const processingRef = useRef(false);
         const lastTimeRef = useRef(-1);
-        const progressRef = useRef(0);
+        const stageProgressRef = useRef(0);
         const mountedRef = useRef(true);
+        const internalStageRef = useRef<'align' | 'right' | 'left' | 'complete'>('align');
 
         useEffect(() => {
             mountedRef.current = true;
@@ -135,7 +138,6 @@ export default function DemoPage() {
 
             const init = async () => {
                 try {
-                    // 1. Setup Camera
                     stream = await navigator.mediaDevices.getUserMedia({
                         video: {
                             facingMode: 'user',
@@ -151,7 +153,6 @@ export default function DemoPage() {
 
                     if (videoRef.current) {
                         videoRef.current.srcObject = stream;
-                        // Wait for metadata to ensure dimensions are known
                         await new Promise((resolve) => {
                             if (videoRef.current) {
                                 videoRef.current.onloadedmetadata = resolve;
@@ -162,9 +163,8 @@ export default function DemoPage() {
                         videoRef.current.play().catch(console.error);
                     }
 
-                    setStatusMessage("Loading AI Model...");
+                    setStatusMessage("Loading AI...");
 
-                    // 2. Setup MediaPipe
                     const { FaceLandmarker, FilesetResolver } = await import("@mediapipe/tasks-vision");
                     const vision = await FilesetResolver.forVisionTasks(
                         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
@@ -178,8 +178,7 @@ export default function DemoPage() {
                             delegate: "CPU"
                         },
                         runningMode: "VIDEO",
-                        numFaces: 1,
-                        outputFaceBlendshapes: true
+                        numFaces: 1
                     });
 
                     if (!mountedRef.current) {
@@ -189,15 +188,13 @@ export default function DemoPage() {
 
                     landmarkerRef.current = landmarker;
                     setIsReady(true);
-                    setStatusMessage("Align face in oval");
+                    setStatusMessage("Please, look straight into the camera");
                     processingRef.current = true;
                     predictLoop();
 
                 } catch (error) {
-                    console.error("Initialization Error:", error);
-                    if (mountedRef.current) {
-                        setStatusMessage("Failed to initialize. Please reload.");
-                    }
+                    console.error("Init Error", error);
+                    setStatusMessage("Camera Error");
                 }
             };
 
@@ -207,128 +204,124 @@ export default function DemoPage() {
                 mountedRef.current = false;
                 processingRef.current = false;
                 if (requestRef.current) cancelAnimationFrame(requestRef.current);
-
-                if (stream) {
-                    stream.getTracks().forEach(track => track.stop());
-                }
-
+                if (stream) stream.getTracks().forEach(track => track.stop());
                 if (landmarkerRef.current) {
-                    try {
-                        landmarkerRef.current.close();
-                    } catch (e) {
-                        // Ignore close errors
-                    }
+                    try { landmarkerRef.current.close(); } catch (e) { }
                 }
             };
         }, []);
 
         const predictLoop = () => {
             if (!processingRef.current || !videoRef.current || !landmarkerRef.current) return;
-
             const video = videoRef.current;
-
             try {
                 if (video.readyState >= 2 && !video.paused && video.videoWidth > 0 && video.videoHeight > 0) {
                     const now = performance.now();
-
-                    // Only process if time has advanced
                     if (now > lastTimeRef.current) {
                         lastTimeRef.current = now;
                         const result = landmarkerRef.current.detectForVideo(video, now);
-                        processResult(result, video.videoWidth);
+                        processResult(result);
                     }
                 }
-            } catch (e: any) {
-                // MediaPipe sometimes throws/logs INFO messages as errors during first run
-                const msg = e?.toString() || "";
-                if (!msg.includes("INFO") && !msg.includes("delegate")) {
-                    console.warn("Detection warning:", e);
-                }
-            }
-
+            } catch (e: any) { }
             requestRef.current = requestAnimationFrame(predictLoop);
         };
 
-        const processResult = (result: any, videoWidth: number) => {
+        const processResult = (result: any) => {
             if (!result.faceLandmarks || result.faceLandmarks.length === 0) {
-                updateGuidance("No face detected", false);
                 return;
             }
-
             const landmarks = result.faceLandmarks[0];
-
-            // Logic for position
-            // cheek_left: 234, cheek_right: 454
+            const nose = landmarks[1];
             const leftCheek = landmarks[234];
             const rightCheek = landmarks[454];
-            const nose = landmarks[1];
-
             const faceWidth = Math.abs(leftCheek.x - rightCheek.x);
-            const centerX = nose.x;
-
-            // Ideal width is around 0.3 - 0.5 of screen width (depends on oval size)
-            // Center should be roughly 0.5
-
-            let msg = "";
-            let good = true;
-
-            if (faceWidth < 0.25) {
-                msg = "Come closer";
-                good = false;
-            } else if (faceWidth > 0.6) {
-                msg = "Move back";
-                good = false;
-            } else if (Math.abs(centerX - 0.5) > 0.1) {
-                msg = "Center your face";
-                good = false;
-            } else {
-                msg = "Perfect! Hold still...";
-            }
-
-            updateGuidance(msg, good);
+            const centerX = (leftCheek.x + rightCheek.x) / 2;
+            const yaw = (nose.x - centerX) / faceWidth;
+            handleStageLogic(faceWidth, nose.x, yaw);
         };
 
-        const updateGuidance = (message: string, isGood: boolean) => {
-            setStatusMessage(prev => prev !== message ? message : prev);
+        const handleStageLogic = (faceWidth: number, noseX: number, yaw: number) => {
+            const currentStage = internalStageRef.current;
+            let good = false;
+            let msg = "";
 
-            if (isGood) {
-                progressRef.current = Math.min(100, progressRef.current + 2); // 0 to 100 in ~50 frames (~1.5s)
-            } else {
-                progressRef.current = Math.max(0, progressRef.current - 5); // Decay faster
+            if (currentStage === 'align') {
+                const isCentered = Math.abs(noseX - 0.5) < 0.1 && faceWidth > 0.25 && faceWidth < 0.6;
+                if (isCentered) {
+                    msg = "Please, look straight into the camera";
+                    good = true;
+                } else {
+                    if (faceWidth < 0.25) msg = "Come closer";
+                    else if (faceWidth > 0.6) msg = "Move back";
+                    else msg = "Center your face";
+                }
+            } else if (currentStage === 'right') {
+                msg = "Turn your head slowly to the right";
+                if (yaw < -0.15) {
+                    good = true;
+                    msg = "Perfect, hold still";
+                }
+            } else if (currentStage === 'left') {
+                if (yaw > 0.15) {
+                    good = true;
+                    msg = "Perfect, hold still";
+                } else {
+                    msg = "Turn your head slowly to the left";
+                }
             }
 
-            // Update UI ref manually or via state? setState is safer for re-render
-            setProgress(progressRef.current);
+            setStatusMessage(prev => prev !== msg ? msg : prev);
 
-            if (progressRef.current >= 100) {
-                processingRef.current = false;
-                captureSequence();
+            if (good) {
+                stageProgressRef.current = Math.min(100, stageProgressRef.current + 2);
+            } else {
+                stageProgressRef.current = Math.max(0, stageProgressRef.current - 5);
+            }
+
+            let totalProgress = 0;
+            if (currentStage === 'align') totalProgress = stageProgressRef.current * 0.33;
+            if (currentStage === 'right') totalProgress = 33 + (stageProgressRef.current * 0.33);
+            if (currentStage === 'left') totalProgress = 66 + (stageProgressRef.current * 0.34);
+
+            setProgress(totalProgress);
+
+            if (stageProgressRef.current >= 100) {
+                stageProgressRef.current = 0;
+                if (currentStage === 'align') {
+                    setStage('right');
+                    internalStageRef.current = 'right';
+                } else if (currentStage === 'right') {
+                    setStage('left');
+                    internalStageRef.current = 'left';
+                } else if (currentStage === 'left') {
+                    setStage('complete');
+                    internalStageRef.current = 'complete';
+                    captureSequence();
+                }
             }
         };
 
         const captureSequence = async () => {
+            processingRef.current = false;
             setStatusMessage("Processing...");
             const captures: string[] = [];
-
-            // Take 3 shots
             for (let i = 0; i < 3; i++) {
                 if (videoRef.current && canvasRef.current) {
-                    const vid = videoRef.current;
-                    const cvs = canvasRef.current;
-                    cvs.width = vid.videoWidth;
-                    cvs.height = vid.videoHeight;
-                    const ctx = cvs.getContext('2d');
+                    const video = videoRef.current;
+                    const canvas = canvasRef.current;
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    const ctx = canvas.getContext('2d');
                     if (ctx) {
-                        ctx.translate(cvs.width, 0);
+                        ctx.translate(canvas.width, 0);
                         ctx.scale(-1, 1);
-                        ctx.drawImage(vid, 0, 0);
-                        captures.push(cvs.toDataURL("image/jpeg"));
+                        ctx.drawImage(video, 0, 0);
+                        captures.push(canvas.toDataURL("image/jpeg"));
                     }
                 }
-                await delay(300);
+                await delay(150);
             }
-
-            // Finish
             setImages(captures);
             setAgeData({
                 age: Math.floor(Math.random() * (35 - 20) + 20),
@@ -337,53 +330,75 @@ export default function DemoPage() {
             setStep('result');
         };
 
+        const totalDashes = 60;
+
         return (
-            <div className="fixed inset-0 bg-black flex flex-col items-center justify-center overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-10 text-white">
-                    <button onClick={() => setStep('welcome')} className="text-blue-400 font-medium">Cancel</button>
-                    {!isReady && <span className="text-xs text-gray-400">Loading AI...</span>}
+            <div className="flex flex-col min-h-screen bg-white text-black relative overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center justify-between p-6">
+                    <button onClick={() => setStep('welcome')}>
+                        <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                    </button>
+                    <div className="flex items-center space-x-2 text-gray-400 font-medium">
+                        <span className="text-sm">Powered by</span>
+                        <span className="text-gray-600 font-bold">Third Factor</span>
+                    </div>
+                    <button className="text-blue-600">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </button>
                 </div>
 
-                <div className="relative w-full h-full">
-                    <video
-                        ref={videoRef}
-                        playsInline
-                        muted
-                        className="absolute inset-0 w-full h-full object-cover transform scale-x-[-1]"
-                    />
+                {/* Main Content */}
+                <div className="flex-1 flex flex-col items-center justify-center relative">
 
-                    {/* Dark Overlay with Oval Cutout */}
-                    <div className="absolute inset-0 pointer-events-none">
-                        <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
-                            <defs>
-                                <mask id="mask">
-                                    <rect width="100%" height="100%" fill="white" />
-                                    <ellipse cx="50%" cy="45%" rx="140" ry="200" fill="black" />
-                                </mask>
-                            </defs>
-                            <rect width="100%" height="100%" fill="rgba(0,0,0,0.7)" mask="url(#mask)" />
+                    {/* Camera Circle Container */}
+                    <div className="relative w-80 h-80 flex items-center justify-center mb-12">
 
-                            {/* Progress Ring */}
-                            <ellipse
-                                cx="50%" cy="45%" rx="140" ry="200"
-                                fill="none"
-                                stroke={progress > 0 ? "#3b82f6" : "rgba(255,255,255,0.2)"}
-                                strokeWidth="4"
-                                strokeDasharray={1000} // Approx perimeter is ~1100
-                                strokeDashoffset={1000 * (1 - progress / 100)}
-                                strokeLinecap="round"
-                                className="transition-all duration-100 linear"
+                        <div className="absolute inset-0 w-full h-full">
+                            {/* SVG Ring with Ticks */}
+                            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 320 320">
+                                {Array.from({ length: totalDashes }).map((_, i) => {
+                                    // Center 160, 160. Radius 140.
+                                    const angle = (i / totalDashes) * 2 * Math.PI - Math.PI / 2; // Start top
+                                    const x1 = 160 + 130 * Math.cos(angle);
+                                    const y1 = 160 + 130 * Math.sin(angle);
+                                    const x2 = 160 + 150 * Math.cos(angle); // Length 20
+                                    const y2 = 160 + 150 * Math.sin(angle);
+
+                                    const isActive = (i / totalDashes) * 100 < progress;
+
+                                    return (
+                                        <line
+                                            key={i}
+                                            x1={x1} y1={y1} x2={x2} y2={y2}
+                                            stroke={isActive ? (stage === 'complete' ? '#10b981' : '#0ea5e9') : '#e5e7eb'}
+                                            strokeWidth="3"
+                                            strokeLinecap="round"
+                                            className="transition-colors duration-150"
+                                        />
+                                    );
+                                })}
+                            </svg>
+                        </div>
+
+                        {/* Video Circle */}
+                        <div className="w-64 h-64 rounded-full overflow-hidden border-4 border-white shadow-inner relative z-10 bg-gray-100">
+                            <video
+                                ref={videoRef}
+                                playsInline
+                                muted
+                                className="w-full h-full object-cover transform scale-x-[-1]"
                             />
-                        </svg>
-                    </div>
-
-                    {/* Status Pill */}
-                    <div className="absolute bottom-20 left-0 right-0 flex justify-center px-4">
-                        <div className={`px-6 py-3 rounded-full backdrop-blur-md border shadow-lg transition-colors duration-300 ${progress > 0 ? "bg-green-500/20 border-green-500/50 text-white" : "bg-black/40 border-white/10 text-white"
-                            }`}>
-                            <span className="font-medium text-lg">{statusMessage}</span>
                         </div>
                     </div>
+
+                    {/* Instruction Text */}
+                    <div className="text-center px-8">
+                        <h2 className="text-2xl font-bold text-slate-800 mb-2 leading-tight">
+                            {statusMessage}
+                        </h2>
+                    </div>
+
                 </div>
 
                 <canvas ref={canvasRef} className="hidden" />
@@ -391,49 +406,62 @@ export default function DemoPage() {
         );
     };
 
-    const ResultStep = () => (
-        <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center animate-in fade-in zoom-in duration-500 bg-white text-black">
-            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 text-green-600">
-                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+    const ResultStep = () => {
+        const [Lottie, setLottie] = useState<any>(null);
+
+        useEffect(() => {
+            import('lottie-react').then(mod => setLottie(() => mod.default));
+        }, []);
+
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center animate-in fade-in zoom-in duration-500 bg-white text-black">
+                <div className="w-48 h-48 mb-6">
+                    {Lottie && (
+                        <Lottie
+                            animationData={require('../../public/Success.json')}
+                            loop={false}
+                            className="w-full h-full"
+                        />
+                    )}
+                </div>
+
+                <h1 className="text-3xl font-bold mb-2">Session Complete</h1>
+                <p className="text-gray-500 mb-8">Data captured successfully</p>
+
+                <div className="w-full max-w-sm bg-gray-50 rounded-2xl p-6 mb-8 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between py-3 border-b border-gray-200/60">
+                        <span className="text-gray-500 font-medium">Estimated Age</span>
+                        <span className="text-xl font-bold text-gray-900">{ageData?.age}</span>
+                    </div>
+                    <div className="flex items-center justify-between py-3">
+                        <span className="text-gray-500 font-medium">Estimated Gender</span>
+                        <span className="text-xl font-bold text-gray-900">{ageData?.gender}</span>
+                    </div>
+                </div>
+
+                {images.length > 0 && (
+                    <div className="flex gap-2 mb-8 overflow-x-auto max-w-full p-2">
+                        {images.map((img, i) => (
+                            <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 shrink-0 shadow-sm">
+                                <Image src={img} alt="capture" fill className="object-cover" />
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                <button
+                    onClick={() => {
+                        setImages([]);
+                        setAgeData(null);
+                        setStep('welcome');
+                    }}
+                    className="w-full max-w-xs px-8 py-4 bg-gray-900 text-white rounded-xl font-semibold hover:bg-gray-800 transition-all active:scale-95 shadow-lg"
+                >
+                    Start Over
+                </button>
             </div>
-
-            <h1 className="text-3xl font-bold mb-2">Session Complete</h1>
-            <p className="text-gray-500 mb-8">Data captured successfully</p>
-
-            <div className="w-full max-w-sm bg-gray-50 rounded-2xl p-6 mb-8 border border-gray-100">
-                <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                    <span className="text-gray-500">Estimated Age</span>
-                    <span className="text-xl font-bold">{ageData?.age}</span>
-                </div>
-                <div className="flex items-center justify-between py-3">
-                    <span className="text-gray-500">Estimated Gender</span>
-                    <span className="text-xl font-bold">{ageData?.gender}</span>
-                </div>
-            </div>
-
-            {/* Debug Images */}
-            {images.length > 0 && (
-                <div className="flex gap-2 mb-8 overflow-x-auto max-w-full p-2">
-                    {images.map((img, i) => (
-                        <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 shrink-0">
-                            <Image src={img} alt="capture" fill className="object-cover" />
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            <button
-                onClick={() => {
-                    setImages([]);
-                    setAgeData(null);
-                    setStep('welcome');
-                }}
-                className="px-8 py-3 bg-gray-900 text-white rounded-full font-medium hover:bg-gray-800 transition-colors"
-            >
-                Start Over
-            </button>
-        </div>
-    );
+        );
+    };
 
     return (
         <main className="min-h-screen bg-white font-sans selection:bg-blue-100">
@@ -447,13 +475,13 @@ export default function DemoPage() {
 
 // Icons
 function SunIcon(props: any) {
-    return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+    return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>;
 }
 function EyeIcon(props: any) {
-    return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+    return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>;
 }
 function GlassesIcon(props: any) {
-    return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v4M8 8v4m-5.172 2.828a4 4 0 015.656 0l.516.516a.75.75 0 001.06 0l.516-.516a4 4 0 015.656 0L19.5 18a2 2 0 002 2h0a2 2 0 002-2v-2a2 2 0 00-2-2H4a2 2 0 00-2 2v2a2 2 0 002 2h0a2 2 0 002-2v-1.172z" /></svg>
+    return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v4M8 8v4m-5.172 2.828a4 4 0 015.656 0l.516.516a.75.75 0 001.06 0l.516-.516a4 4 0 015.656 0L19.5 18a2 2 0 002 2h0a2 2 0 002-2v-2a2 2 0 00-2-2H4a2 2 0 00-2 2v2a2 2 0 002 2h0a2 2 0 002-2v-1.172z" /></svg>;
 }
 
 // Utils
