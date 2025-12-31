@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Third Factor Experience Center",
   description: "Experience the future of age verification",
+  icons: {
+    icon: "/thirdfactor-mark-transparent.png",
+  },
 };
 
 export default function RootLayout({

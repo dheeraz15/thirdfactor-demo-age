@@ -47,8 +47,8 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
                 } else {
                     setLanguage("en");
                 }
-            } catch (error) {
-                console.error("Error fetching location:", error);
+            } catch {
+                // Silently fail if location cannot be fetched, default to English
             }
         };
 
