@@ -140,6 +140,38 @@ export default function DemoPage() {
         const mountedRef = useRef(true);
         const centerRef = useRef<{ x: number, y: number } | null>(null);
 
+        // Buffered photos
+        const capturedPhotosRef = useRef<{ front: string[], right: string | null, left: string | null }>({
+            front: [],
+            right: null,
+            left: null
+        });
+
+        const convertCanvasToBase64 = (canvas: HTMLCanvasElement) => {
+            return canvas.toDataURL('image/jpeg', 0.8);
+        };
+
+        const captureFrame = () => {
+            if (!videoRef.current || !canvasRef.current) return null;
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return null;
+
+            if (canvas.width !== video.videoWidth) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+            }
+
+            // Reset transform to avoid accumulation, then mirror
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+
+            ctx.drawImage(video, 0, 0);
+            return convertCanvasToBase64(canvas);
+        };
+
         // Stage Progress Refs
         const stageTimerRef = useRef<number | null>(null);
         const stageRef = useRef<'align' | 'right' | 'left' | 'complete'>('align');
@@ -147,6 +179,13 @@ export default function DemoPage() {
         // Smoothing refs
         const prevAngleRef = useRef<number>(0);
         const strictModeRef = useRef(false);
+
+        useEffect(() => {
+            if (stage === 'align') {
+                // Reset photos on start
+                capturedPhotosRef.current = { front: [], right: null, left: null };
+            }
+        }, [stage]);
 
         useEffect(() => {
             mountedRef.current = true;
@@ -302,6 +341,13 @@ export default function DemoPage() {
 
                 if (isCentered && isGoodSize) {
                     setStatusMessage("Hold still...");
+
+                    // Capture front photos
+                    if (now % 400 < 50 && capturedPhotosRef.current.front.length < 3) {
+                        const frame = captureFrame();
+                        if (frame) capturedPhotosRef.current.front.push(frame);
+                    }
+
                     if (!stageTimerRef.current) {
                         stageTimerRef.current = now;
                     } else if (now - stageTimerRef.current > 800) {
@@ -319,6 +365,10 @@ export default function DemoPage() {
                 const isTurnedRight = smoothedAngle > 30;
 
                 if (isTurnedRight) {
+                    if (!capturedPhotosRef.current.right) {
+                        capturedPhotosRef.current.right = captureFrame();
+                    }
+
                     if (!stageTimerRef.current) stageTimerRef.current = now;
                     else if (now - stageTimerRef.current > 200) { // Fast reaction
                         advanceStage('left');
@@ -333,6 +383,10 @@ export default function DemoPage() {
                 const isTurnedLeft = smoothedAngle < -30;
 
                 if (isTurnedLeft) {
+                    if (!capturedPhotosRef.current.left) {
+                        capturedPhotosRef.current.left = captureFrame();
+                    }
+
                     if (!stageTimerRef.current) stageTimerRef.current = now;
                     else if (now - stageTimerRef.current > 200) {
                         advanceStage('complete');
@@ -364,29 +418,100 @@ export default function DemoPage() {
         const captureSequence = async () => {
             processingRef.current = false;
 
-            if (videoRef.current && canvasRef.current) {
-                const video = videoRef.current;
-                const canvas = canvasRef.current;
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                const ctx = canvas.getContext('2d');
-                if (ctx) {
-                    ctx.translate(canvas.width, 0);
-                    ctx.scale(-1, 1);
-                    ctx.drawImage(video, 0, 0);
-                    setCapturedImage(canvas.toDataURL("image/jpeg"));
-                }
+            // Prepare final payload: 3 front, 1 right, 1 left
+            let finalFrames: string[] = [];
+
+            // 1. Front
+            finalFrames.push(...capturedPhotosRef.current.front);
+            // Fallback if missing, grab current
+            const currentFrame = captureFrame();
+
+            // If we have nothing at all, we must abort or just try to capture now
+            if (!currentFrame && finalFrames.length === 0) {
+                setStatusMessage("Capture failed");
+                setIsAnalyzing(false);
+                return;
             }
+
+            // Fill front to 3
+            while (finalFrames.length < 3) {
+                finalFrames.push(currentFrame || finalFrames[0]);
+            }
+
+            // 2. Right
+            if (capturedPhotosRef.current.right) finalFrames.push(capturedPhotosRef.current.right);
+            else finalFrames.push(currentFrame || finalFrames[0]);
+
+            // 3. Left
+            if (capturedPhotosRef.current.left) finalFrames.push(capturedPhotosRef.current.left);
+            else finalFrames.push(currentFrame || finalFrames[0]);
+
+            // Show one of the images locally
+            setCapturedImage(finalFrames[0]);
 
             setIsAnalyzing(true);
             setStatusMessage("Verifying...");
-            await delay(1200);
 
-            setAgeData({
-                age: Math.floor(Math.random() * (35 - 20) + 20),
-                gender: Math.random() > 0.5 ? 'Male' : 'Female'
-            });
-            setStep('result');
+            try {
+                const response = await fetch('/api/detect-face', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(finalFrames),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+
+                if (data.result === false) {
+                    setStatusMessage("ohh ohh; your face is too good to be dectected");
+                    setIsAnalyzing(false);
+                    await delay(3000); // Show message for 3 seconds
+
+                    // Reset to try again
+                    setCapturedImage(null);
+                    setStage('align');
+                    stageRef.current = 'align';
+                    processingRef.current = true;
+                    predictLoop();
+                    return;
+                }
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Map the response to our state
+                setAgeData({
+                    age: data.age,
+                    gender: data.gender
+                });
+
+                if (data.success_photo) {
+                    setImages([data.success_photo]);
+                } else {
+                    setImages(finalFrames);
+                }
+
+                setStep('result');
+
+            } catch (error) {
+                console.error("Verification Error:", error);
+                setStatusMessage("Verification Failed");
+                await delay(2000);
+
+                // Reset to try again
+                setIsAnalyzing(false);
+                setCapturedImage(null);
+                setStage('align');
+                stageRef.current = 'align';
+                processingRef.current = true;
+                predictLoop();
+            }
         };
 
         const totalDashes = 60;
@@ -626,4 +751,8 @@ function GlassesIcon(props: any) {
 // Utils
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function convertCanvasToBase64(canvas: HTMLCanvasElement): string {
+    return canvas.toDataURL("image/jpeg");
 }
