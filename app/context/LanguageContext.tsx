@@ -148,23 +148,23 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
     const [language, setLanguage] = useState<Language>("en");
 
-    useEffect(() => {
-        const fetchLocation = async () => {
-            try {
-                const response = await fetch("https://ipapi.co/json/");
-                const data = await response.json();
-                // if (data.country_code === "NP") {
-                //     setLanguage("ne");
-                // } else {
-                //     setLanguage("en");
-                // }
-            } catch {
-                // Silently fail if location cannot be fetched, default to English
-            }
-        };
+    // useEffect(() => {
+    //     const fetchLocation = async () => {
+    //         try {
+    //             const response = await fetch("https://ipapi.co/json/");
+    //             const data = await response.json();
+    //             // if (data.country_code === "NP") {
+    //             //     setLanguage("ne");
+    //             // } else {
+    //             //     setLanguage("en");
+    //             // }
+    //         } catch {
+    //             // Silently fail if location cannot be fetched, default to English
+    //         }
+    //     };
 
-        fetchLocation();
-    }, []);
+    //     fetchLocation();
+    // }, []);
 
     return (
         <LanguageContext.Provider value={{ language, setLanguage, t: translations[language] }}>

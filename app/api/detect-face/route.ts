@@ -46,6 +46,8 @@ export async function POST(request: Request) {
             headers,
             body: JSON.stringify(payload),
         });
+        console.log('External API response:', response);
+
 
         if (!response.ok) {
             const errorText = await response.text();
