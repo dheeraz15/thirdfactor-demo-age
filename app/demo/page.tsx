@@ -5,10 +5,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import emotionsData from '../../emotions.json';
 import ageFeedbackData from '../../age-feedback.json';
+import { useLanguage } from '../context/LanguageContext';
 
 type Step = 'welcome' | 'prep' | 'capture' | 'result';
 
 export default function DemoPage() {
+    const { t } = useLanguage();
     const [step, setStep] = useState<Step>('welcome');
     const [images, setImages] = useState<string[]>([]);
     const [statusMessage, setStatusMessage] = useState<string>('Initializing camera...');
@@ -65,9 +67,9 @@ export default function DemoPage() {
             <div className="flex-1 flex flex-col items-center justify-center w-full max-w-md">
                 <Logo />
                 {/* <h2 className="text-xl font-medium text-gray-500 mb-2">Third Factor</h2> */}
-                <h1 className="text-3xl font-bold mb-4 tracking-tight">Demo Verification</h1>
+                <h1 className="text-3xl font-bold mb-4 tracking-tight">{t.demoVerification}</h1>
                 <p className="text-gray-500 mb-12">
-                    Complete these steps to verify your identity
+                    {t.completeSteps}
                 </p>
 
                 <div className="flex items-center space-x-4 mb-16 w-full p-4 rounded-2xl bg-gray-50 border border-gray-100">
@@ -75,8 +77,8 @@ export default function DemoPage() {
                         <div className="h-1/2 w-full bg-blue-600 rounded-full"></div>
                     </div>
                     <div className="text-left">
-                        <p className="text-xs uppercase text-gray-400 font-bold tracking-wider">Step 1</p>
-                        <p className="font-semibold text-lg text-gray-900">Age estimation</p>
+                        <p className="text-xs uppercase text-gray-400 font-bold tracking-wider">{t.stepOne}</p>
+                        <p className="font-semibold text-lg text-gray-900">{t.ageEstimation}</p>
                     </div>
                 </div>
 
@@ -84,18 +86,18 @@ export default function DemoPage() {
                     onClick={() => setStep('prep')}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-2xl transition-all active:scale-95 mb-6 opacity-90 hover:opacity-100"
                 >
-                    Continue
+                    {t.continue}
                 </button>
 
                 <p className="mt-6 text-xs text-gray-400">
-                    By continuing, you acknowledge our <a href="#" className="underline hover:text-gray-600">Privacy Notice</a>
+                    By continuing, you acknowledge our <a href="#" className="underline hover:text-gray-600">{t.privacyNotice}</a>
                 </p>
             </div>
 
             <div className="pb-4 flex flex-col items-center gap-2 text-xs text-gray-400">
 
 
-                <span className="font-medium tracking-wide">Secured by</span>
+                <span className="font-medium tracking-wide">{t.securedBy}</span>
                 <Image src="/logopure.png" width={100} height={24} alt="Third Factor" className="h-5 w-auto opacity-40 grayscale hover:grayscale-0 transition-all duration-300" />
             </div>
         </div>
@@ -107,10 +109,10 @@ export default function DemoPage() {
         <div className="flex flex-col items-center justify-between min-h-screen p-6 text-center animate-in fade-in slide-in-from-right-4 duration-500 bg-white text-black">
             <div className="w-full max-w-md pt-8">
                 <div className="w-full h-1 bg-gray-100 rounded-full mb-8 overflow-hidden">
-                    <div className="h-full bg-black w-1/3 rounded-full"></div>
+                    <div className="h-full bg-blue-600 w-1/3 rounded-full"></div>
                 </div>
 
-                <h1 className="text-3xl font-bold text-left mb-6">Prepare for the camera</h1>
+                <h1 className="text-3xl font-bold text-left mb-6">{t.prepareCamera}</h1>
 
                 {/* Animation Container */}
                 <div className="relative w-full h-80 bg-slate-50 rounded-3xl mb-10 flex items-center justify-center overflow-hidden border border-slate-100">
@@ -150,13 +152,13 @@ export default function DemoPage() {
                         <div className="p-3 bg-blue-100 rounded-full text-blue-600">
                             <SunIcon className="w-8 h-8" />
                         </div>
-                        <span className="font-semibold">Position your face in the frame</span>
+                        <span className="font-semibold">{t.positionFace}</span>
                     </div>
                     <div className="flex items-center space-x-4 p-4 rounded-xl hover:bg-gray-50 transition-colors">
                         <div className="p-3 bg-blue-100 rounded-full text-blue-600">
                             <EyeIcon className="w-8 h-8" />
                         </div>
-                        <span className="font-semibold">Turn your head slowly to both sides</span>
+                        <span className="font-semibold">{t.turnHead}</span>
                     </div>
                 </div>
             </div>
@@ -165,7 +167,7 @@ export default function DemoPage() {
                 onClick={() => setStep('capture')}
                 className="w-full max-w-md bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-2xl mt-8 transition-all active:scale-95"
             >
-                I'm ready
+                {t.imReady}
             </button>
         </div>
     );
@@ -803,7 +805,7 @@ export default function DemoPage() {
                     {/* Top Content Group */}
                     <div className="flex flex-col items-center w-full space-y-1">
                         {/* 1. Lottie */}
-                        <div className="w-20 h-20">
+                        <div className="w-28 h-28">
                             {Lottie && (
                                 <Lottie
                                     animationData={require('../../public/Success.json')}
@@ -814,15 +816,15 @@ export default function DemoPage() {
                         </div>
 
                         {/* 2. Title */}
-                        <h1 className="text-lg font-bold text-emerald-600 tracking-tight">Session Completed</h1>
+                        <h1 className="text-2xl font-bold text-emerald-600 tracking-tight">{t.sessionCompleted}</h1>
 
                         {/* 3. Emotion Box */}
                         {gimmMode && displayMessages?.emotionMsg && (
-                            <div className="w-full bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-center space-x-3 shadow-sm">
-                                <div className="w-10 h-10 flex items-center justify-center bg-white rounded-full text-2xl border border-emerald-100 shrink-0 shadow-sm">
+                            <div className="w-full bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex items-center space-x-3 shadow-sm">
+                                <div className="w-12 h-12 flex items-center justify-center bg-white rounded-full text-3xl border border-emerald-100 shrink-0 shadow-sm">
                                     {getEmojiForEmotion(ageData?.emotion)}
                                 </div>
-                                <p className="text-sm font-semibold text-emerald-900 leading-snug tracking-wide text-left flex-1">
+                                <p className="text-base font-semibold text-emerald-900 leading-snug tracking-wide text-left flex-1">
                                     {displayMessages.emotionMsg}
                                 </p>
                             </div>
@@ -830,15 +832,15 @@ export default function DemoPage() {
                     </div>
 
                     {/* 4. Main Card - Centered */}
-                    <div className="w-full bg-white rounded-2xl p-5 border border-gray-100 relative overflow-hidden flex-shrink-0">
+                    <div className="w-full bg-white rounded-2xl p-6 border border-gray-100 relative overflow-hidden flex-shrink-0">
 
                         {/* Images & Celeb */}
                         {/* Images & Celeb */}
-                        <div className="flex flex-col items-center mb-4">
-                            <div className="flex items-center justify-center space-x-2 mb-2">
+                        <div className="flex flex-col items-center mb-5">
+                            <div className="flex items-center justify-center space-x-3 mb-3">
                                 {/* User Image */}
                                 {images.length > 0 && (
-                                    <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md z-10">
+                                    <div className="relative w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-md z-10">
                                         <Image src={images[0]} alt="User" fill className="object-cover" />
                                     </div>
                                 )}
@@ -847,10 +849,10 @@ export default function DemoPage() {
                                 {celebData && (
                                     <>
                                         <div className="text-gray-300">
-                                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                                            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
                                         </div>
                                         {/* Celeb Image */}
-                                        <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md z-10">
+                                        <div className="relative w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-md z-10">
                                             <Image src={celebData.image} alt={celebData.name} fill className="object-cover" />
                                         </div>
                                     </>
@@ -859,34 +861,34 @@ export default function DemoPage() {
 
                             {celebData ? (
                                 <div className="text-center">
-                                    <p className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold mb-1">Celebrity Look-alike</p>
-                                    <h3 className="text-lg font-semibold text-gray-900 tracking-tight">{celebData.name}</h3>
+                                    <p className="text-xs uppercase tracking-widest text-gray-400 font-semibold mb-1">{t.celebLookAlike}</p>
+                                    <h3 className="text-xl font-semibold text-gray-900 tracking-tight">{celebData.name}</h3>
                                     {celebData.similarity !== undefined && (
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            <span className="font-bold text-blue-600">{Math.round(celebData.similarity * 100)}%</span> match
+                                        <p className="text-sm text-gray-500 mt-1">
+                                            <span className="font-bold text-blue-600">{Math.round(celebData.similarity * 100)}%</span> {t.match}
                                         </p>
                                     )}
                                 </div>
                             ) : celebMatch ? (
-                                <p className="text-sm text-gray-400 italic">No celebrity match found</p>
+                                <p className="text-base text-gray-400 italic">{t.noCelebMatch}</p>
                             ) : null}
                         </div>
 
                         {/* Stats Bars */}
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                                <span className="text-gray-500 font-medium text-xs">Estimated Age</span>
+                                <span className="text-gray-500 font-medium text-sm">{t.estimatedAge}</span>
                                 <div className="flex items-center space-x-3">
-                                    <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                    <div className="w-28 h-2 bg-gray-100 rounded-full overflow-hidden">
                                         <div className="h-full bg-blue-600 rounded-full" style={{ width: `${Math.min((ageData?.age || 0), 100)}%` }}></div>
                                     </div>
-                                    <span className="text-base font-bold text-gray-900 w-6 text-right">{ageData?.age}</span>
+                                    <span className="text-lg font-bold text-gray-900 w-8 text-right">{ageData?.age}</span>
                                 </div>
                             </div>
                             <div className="flex items-center justify-between pt-2 border-t border-gray-50">
-                                <span className="text-gray-500 font-medium text-xs">Gender</span>
-                                <span className="text-sm font-semibold text-gray-900 bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100">
-                                    {ageData?.gender || "Unknown"}
+                                <span className="text-gray-500 font-medium text-sm">{t.gender}</span>
+                                <span className="text-base font-semibold text-gray-900 bg-gray-50 px-3 py-1 rounded-lg border border-gray-100">
+                                    {ageData?.gender || t.unknown}
                                 </span>
                             </div>
                         </div>
@@ -894,11 +896,11 @@ export default function DemoPage() {
                     </div>
 
                     {/* Bottom Content Group */}
-                    <div className="w-full space-y-1">
+                    <div className="w-full space-y-2">
                         {/* 5. Age Feedback */}
                         {gimmMode && displayMessages?.ageMsg && (
-                            <div className={`rounded-xl p-4 text-center border-2 ${feedbackMode === 'roast' ? 'bg-rose-50 border-rose-100 text-rose-900' : 'bg-blue-50 border-blue-100 text-blue-900'}`}>
-                                <p className="text-base font-bold leading-tight">
+                            <div className={`rounded-xl p-5 text-center border-2 ${feedbackMode === 'roast' ? 'bg-rose-50 border-rose-100 text-rose-900' : 'bg-blue-50 border-blue-100 text-blue-900'}`}>
+                                <p className="text-lg font-bold leading-tight">
                                     {displayMessages.ageMsg}
                                 </p>
                             </div>
@@ -911,9 +913,9 @@ export default function DemoPage() {
                                 setCelebData(null);
                                 setStep('welcome');
                             }}
-                            className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-semibold text-base transition-all active:scale-95"
+                            className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-semibold text-lg transition-all active:scale-95"
                         >
-                            Start Over
+                            {t.startOver}
                         </button>
                     </div>
                 </div>

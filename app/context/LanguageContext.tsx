@@ -126,7 +126,7 @@ const translations: Record<Language, Translations> = {
         verifying: "प्रमाणित गर्दै...",
 
         // Demo page - Result
-        sessionCompleted: "सत्र पूरा भयो",
+        sessionCompleted: "पूरा भयो",
         celebLookAlike: "सेलिब्रिटी जस्तै देखिने",
         noCelebMatch: "कुनै सेलिब्रिटी मिलेन",
         estimatedAge: "अनुमानित उमेर",
@@ -153,11 +153,11 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
             try {
                 const response = await fetch("https://ipapi.co/json/");
                 const data = await response.json();
-                if (data.country_code === "NP") {
-                    setLanguage("ne");
-                } else {
-                    setLanguage("en");
-                }
+                // if (data.country_code === "NP") {
+                //     setLanguage("ne");
+                // } else {
+                //     setLanguage("en");
+                // }
             } catch {
                 // Silently fail if location cannot be fetched, default to English
             }

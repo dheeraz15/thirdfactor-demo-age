@@ -33,7 +33,7 @@ export default function LanguageSwitcher() {
         <div className="absolute top-4 right-4 z-50" ref={dropdownRef}>
             <button
                 onClick={toggleDropdown}
-                className="flex items-center gap-2 px-3 py-2 bg-white/80 backdrop-blur-sm hover:bg-white rounded-full shadow-sm border border-gray-200 transition-all text-sm font-medium text-gray-700"
+                className="flex items-center gap-2 px-3 py-2 bg-white/80 backdrop-blur-sm hover:bg-white rounded-full border border-gray-200 transition-all text-sm font-medium text-gray-700"
             >
                 {language === "en" ? <USFlag /> : <NepalFlag />}
                 <span>{language === "en" ? "EN" : "NP"}</span>
@@ -48,7 +48,7 @@ export default function LanguageSwitcher() {
             </button>
 
             {isOpen && (
-                <div className="absolute top-full right-0 mt-2 w-36 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-200 flex flex-col">
+                <div className="absolute top-full right-0 mt-2 w-36 bg-white rounded-xl border border-gray-100 overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-200 flex flex-col">
                     <button
                         onClick={() => selectLanguage("en")}
                         className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${language === "en" ? "bg-blue-50/50 text-blue-600" : "text-gray-700"
@@ -83,7 +83,7 @@ function CheckIcon() {
 
 function USFlag() {
     return (
-        <div className="w-5 h-5 rounded-full overflow-hidden shadow-sm ring-1 ring-black/5">
+        <div className="w-5 h-5 rounded-full overflow-hidden ring-1 ring-black/5">
             <Image src="/us.svg" alt="US Flag" width={20} height={20} className="w-full h-full object-cover" />
         </div>
     );
@@ -92,7 +92,7 @@ function USFlag() {
 function NepalFlag() {
     return (
         <div className="w-4 h-5">
-            <Image src="/np.svg" alt="Nepal Flag" width={16} height={20} className="w-full h-full object-contain drop-shadow-sm" />
+            <Image src="/np.svg" alt="Nepal Flag" width={16} height={20} className="w-full h-full object-contain" />
         </div>
     );
 }
