@@ -11,24 +11,16 @@ export async function POST(request: Request) {
 
         const apiUrl = process.env.CELEBRITY_MATCH_API_URL;
         if (!apiUrl) {
-            // For demo purposes if env is missing, we could return a mock or error.
-            // Returning error to prompt user to setup env.
-            console.warn('CELEBRITY_MATCH_API_URL not configured');
-            // return NextResponse.json({ error: 'Celebrity API URL not configured' }, { status: 500 });
-
-            // MOCK RESPONSE FOR NOW TO UNBLOCK UI DEVELOPMENT IF URL IS MISSING
-            // Remove this block when real API is ready
-            return NextResponse.json({
-                "Keanu Reeves": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" // 1x1 pixel mock
-            });
+            return NextResponse.json({ error: 'Celebrity API URL not configured' }, { status: 500 });
         }
 
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.FACE_DETECTION_API_KEY}`,
             },
-            body: JSON.stringify({ image: body.image }),
+            body: JSON.stringify([body.image]),
         });
 
         if (!response.ok) {

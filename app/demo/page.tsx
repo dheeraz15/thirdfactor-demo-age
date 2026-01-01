@@ -2,10 +2,11 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import emotionsData from '../../emotions.json';
 import ageFeedbackData from '../../age-feedback.json';
 
-type Step = 'welcome' | 'prep' | 'capture' | 'result' | 'settings';
+type Step = 'welcome' | 'prep' | 'capture' | 'result';
 
 export default function DemoPage() {
     const [step, setStep] = useState<Step>('welcome');
@@ -13,10 +14,33 @@ export default function DemoPage() {
     const [statusMessage, setStatusMessage] = useState<string>('Initializing camera...');
     const [captureProgress, setCaptureProgress] = useState(0);
     const [ageData, setAgeData] = useState<{ age: number; gender: string; emotion?: string } | null>(null);
-    const [celebData, setCelebData] = useState<{ name: string; image: string } | null>(null);
+    const [celebData, setCelebData] = useState<{ name: string; image: string; similarity?: number } | null>(null);
     const [feedbackMode, setFeedbackMode] = useState<'roast' | 'flattery'>('flattery');
     const [apiVersion, setApiVersion] = useState<'v1' | 'v2'>('v1');
     const [gimmMode, setGimmMode] = useState<boolean>(true);
+    const [celebMatch, setCelebMatch] = useState<boolean>(true);
+
+    // Initialize/Sync settings from localStorage on mount
+    useEffect(() => {
+        const storedFeedback = localStorage.getItem('feedbackMode');
+        const storedApi = localStorage.getItem('apiVersion');
+        const storedGimm = localStorage.getItem('gimmMode'); // Stored as "true"/"false"
+        const storedCeleb = localStorage.getItem('celebMatch');
+
+        // Only override defaults if values exist
+        if (storedFeedback === 'roast' || storedFeedback === 'flattery') {
+            setFeedbackMode(storedFeedback);
+        }
+        if (storedApi === 'v1' || storedApi === 'v2') {
+            setApiVersion(storedApi);
+        }
+        if (storedGimm !== null) {
+            setGimmMode(storedGimm === 'true');
+        }
+        if (storedCeleb !== null) {
+            setCelebMatch(storedCeleb === 'true');
+        }
+    }, [step]); // Re-check when step changes (e.g. coming back from settings page via nav, though full page load handles it too)
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -40,8 +64,8 @@ export default function DemoPage() {
         <div className="flex flex-col items-center justify-between min-h-screen p-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-700 bg-white text-black">
             <div className="flex-1 flex flex-col items-center justify-center w-full max-w-md">
                 <Logo />
-                <h2 className="text-xl font-medium text-gray-500 mb-2">Third Factor</h2>
-                <h1 className="text-3xl font-bold mb-4 tracking-tight">Verification for<br />Demo Applications</h1>
+                {/* <h2 className="text-xl font-medium text-gray-500 mb-2">Third Factor</h2> */}
+                <h1 className="text-3xl font-bold mb-4 tracking-tight">Demo Verification</h1>
                 <p className="text-gray-500 mb-12">
                     Complete these steps to verify your identity
                 </p>
@@ -69,101 +93,15 @@ export default function DemoPage() {
             </div>
 
             <div className="pb-4 flex flex-col items-center gap-2 text-xs text-gray-400">
-                <button
-                    onClick={() => setStep('settings')}
-                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors mb-2"
-                >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                </button>
+
+
                 <span className="font-medium tracking-wide">Secured by</span>
                 <Image src="/logopure.png" width={100} height={24} alt="Third Factor" className="h-5 w-auto opacity-40 grayscale hover:grayscale-0 transition-all duration-300" />
             </div>
         </div>
     );
 
-    const SettingsStep = () => (
-        <div className="flex flex-col items-center min-h-screen p-6 bg-white text-black animate-in fade-in slide-in-from-right-4 duration-500">
-            {/* Header */}
-            <div className="w-full max-w-md flex items-center justify-between mb-8 pt-4">
-                <button
-                    onClick={() => setStep('welcome')}
-                    className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
-                >
-                    <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                </button>
-                <h1 className="text-xl font-bold">Settings</h1>
-                <div className="w-10"></div>
-            </div>
 
-            <div className="w-full max-w-md space-y-6">
-                {/* Settings Group */}
-                <div className="flex flex-col space-y-4">
-
-                    {/* API Version Toggle */}
-                    <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium text-gray-700">API Version</span>
-                            <div className="flex items-center bg-white rounded-lg p-1 border border-gray-100 shadow-sm">
-                                <button
-                                    onClick={() => setApiVersion('v1')}
-                                    className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${apiVersion === 'v1' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                                >
-                                    V1
-                                </button>
-                                <button
-                                    onClick={() => setApiVersion('v2')}
-                                    className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${apiVersion === 'v2' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                                >
-                                    V2
-                                </button>
-                            </div>
-                        </div>
-                        <p className="text-xs text-gray-400">
-                            Select the endpoint version for face detection ({apiVersion === 'v1' ? 'Standard' : 'Experimental'}).
-                        </p>
-                    </div>
-
-                    {/* Gimm Mode Toggle */}
-                    <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium text-gray-700">GIMM Mode</span>
-                            <button
-                                onClick={() => setGimmMode(!gimmMode)}
-                                className={`w-14 h-8 rounded-full transition-colors duration-300 relative focus:outline-none ${gimmMode ? 'bg-blue-600' : 'bg-gray-300'}`}
-                            >
-                                <div className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-white shadow-sm transition-transform duration-300 ${gimmMode ? 'translate-x-6' : 'translate-x-0'}`} />
-                            </button>
-                        </div>
-                        <p className="text-xs text-gray-400 mb-4">
-                            Enable extended features like roast/flattery, emotion detection, and age feedback.
-                        </p>
-
-                        {/* Roast vs Flattery Toggle (Nested) */}
-                        <div className={`transition-all duration-300 overflow-hidden ${gimmMode ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
-                            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                                <span className="text-sm text-gray-600">Feedback Type</span>
-                                <div className="flex items-center space-x-3 bg-white px-3 py-1.5 rounded-xl border border-gray-100">
-                                    <span className={`text-xs font-bold transition-colors ${feedbackMode === 'flattery' ? 'text-gray-300' : 'text-red-500'}`}>Roast</span>
-                                    <button
-                                        onClick={() => setFeedbackMode(prev => prev === 'flattery' ? 'roast' : 'flattery')}
-                                        className={`relative w-10 h-5 rounded-full transition-colors duration-300 focus:outline-none ${feedbackMode === 'flattery' ? 'bg-emerald-500' : 'bg-red-500'}`}
-                                    >
-                                        <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${feedbackMode === 'flattery' ? 'translate-x-5' : 'translate-x-0'}`} />
-                                    </button>
-                                    <span className={`text-xs font-bold transition-colors ${feedbackMode === 'flattery' ? 'text-emerald-600' : 'text-gray-300'}`}>Flattery</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
 
     const PrepStep = () => (
         <div className="flex flex-col items-center justify-between min-h-screen p-6 text-center animate-in fade-in slide-in-from-right-4 duration-500 bg-white text-black">
@@ -275,9 +213,12 @@ export default function DemoPage() {
             const ctx = canvas.getContext('2d');
             if (!ctx) return null;
 
-            if (canvas.width !== video.videoWidth) {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
+            const targetWidth = 640;
+            const targetHeight = 480;
+
+            if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+                canvas.width = targetWidth;
+                canvas.height = targetHeight;
             }
 
             // Reset transform to avoid accumulation, then mirror
@@ -285,7 +226,7 @@ export default function DemoPage() {
             ctx.translate(canvas.width, 0);
             ctx.scale(-1, 1);
 
-            ctx.drawImage(video, 0, 0);
+            ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
             return convertCanvasToBase64(canvas);
         };
 
@@ -564,11 +505,14 @@ export default function DemoPage() {
                     body: JSON.stringify(finalFrames),
                 });
 
-                const celebPromise = fetch('/api/match-celebrity', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image: finalFrames[0] }),
-                });
+                // Conditional Celeb Match
+                const celebPromise = celebMatch
+                    ? fetch('/api/match-celebrity', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: finalFrames[0] }),
+                    })
+                    : Promise.resolve({ ok: false, json: async () => ({}) } as Response); // Mock skip
 
                 const [faceRes, celebRes] = await Promise.all([facePromise, celebPromise]);
 
@@ -605,22 +549,27 @@ export default function DemoPage() {
                     setImages(finalFrames);
                 }
 
-                // Process Celeb Data (Best effort)
-                try {
-                    if (celebRes.ok) {
-                        const celebJson = await celebRes.json();
-                        // Expected format: { "Brad Pitt": "base64..." }
-                        const keys = Object.keys(celebJson);
-                        if (keys.length > 0) {
-                            const name = keys[0];
-                            const image = celebJson[name];
-                            if (typeof image === 'string' && image.startsWith('data:image')) {
-                                setCelebData({ name, image });
+                // Process Celeb Data (Best effort) - Only if enabled
+                if (celebMatch) {
+                    try {
+                        if (celebRes.ok) {
+                            const celebJson = await celebRes.json();
+                            // New format: { label: "Name", image: "base64...", similarity_score: ... }
+                            if (celebJson.label && celebJson.image) {
+                                let image = celebJson.image;
+                                if (!image.startsWith('data:image')) {
+                                    image = `data:image/jpeg;base64,${image}`;
+                                }
+                                setCelebData({
+                                    name: celebJson.label,
+                                    image,
+                                    similarity: celebJson.similarity_score // Add similarity
+                                });
                             }
                         }
+                    } catch (celebErr) {
+                        console.error("Celeb match failed", celebErr);
                     }
-                } catch (celebErr) {
-                    console.error("Celeb match failed", celebErr);
                 }
 
                 setStep('result');
@@ -850,9 +799,9 @@ export default function DemoPage() {
         return (
             <div className="flex flex-col items-center justify-center h-screen w-full overflow-hidden p-4 bg-white text-black font-sans">
 
-                <div className="flex flex-col items-center justify-between h-full max-h-[800px] w-full max-w-md py-2">
+                <div className="flex flex-col items-center justify-center w-full max-w-md space-y-4">
                     {/* Top Content Group */}
-                    <div className="flex flex-col items-center w-full space-y-2">
+                    <div className="flex flex-col items-center w-full space-y-1">
                         {/* 1. Lottie */}
                         <div className="w-20 h-20">
                             {Lottie && (
@@ -912,10 +861,15 @@ export default function DemoPage() {
                                 <div className="text-center">
                                     <p className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold mb-1">Celebrity Look-alike</p>
                                     <h3 className="text-lg font-semibold text-gray-900 tracking-tight">{celebData.name}</h3>
+                                    {celebData.similarity !== undefined && (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            <span className="font-bold text-blue-600">{Math.round(celebData.similarity * 100)}%</span> match
+                                        </p>
+                                    )}
                                 </div>
-                            ) : (
+                            ) : celebMatch ? (
                                 <p className="text-sm text-gray-400 italic">No celebrity match found</p>
-                            )}
+                            ) : null}
                         </div>
 
                         {/* Stats Bars */}
@@ -940,12 +894,12 @@ export default function DemoPage() {
                     </div>
 
                     {/* Bottom Content Group */}
-                    <div className="w-full space-y-2">
+                    <div className="w-full space-y-1">
                         {/* 5. Age Feedback */}
                         {gimmMode && displayMessages?.ageMsg && (
                             <div className={`rounded-xl p-4 text-center border-2 ${feedbackMode === 'roast' ? 'bg-rose-50 border-rose-100 text-rose-900' : 'bg-blue-50 border-blue-100 text-blue-900'}`}>
                                 <p className="text-base font-bold leading-tight">
-                                    "{displayMessages.ageMsg}"
+                                    {displayMessages.ageMsg}
                                 </p>
                             </div>
                         )}
@@ -970,7 +924,6 @@ export default function DemoPage() {
     return (
         <main className="min-h-screen bg-white font-sans selection:bg-blue-100">
             {step === 'welcome' && <WelcomeStep />}
-            {step === 'settings' && <SettingsStep />}
             {step === 'prep' && <PrepStep />}
             {step === 'capture' && <CaptureStep />}
             {step === 'result' && <ResultStep />}
