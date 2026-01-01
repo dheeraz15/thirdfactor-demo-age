@@ -16,7 +16,14 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Image is required (send as array of strings or object with image property)' }, { status: 400 });
         }
 
-        const apiUrl = process.env.FACE_DETECTION_API_URL;
+        const { searchParams } = new URL(request.url);
+        const version = searchParams.get('version');
+
+        let apiUrl = process.env.FACE_DETECTION_API_URL; // Default V1
+        if (version === 'v2' && process.env.FACE_DETECTION_API_URL_V2) {
+            apiUrl = process.env.FACE_DETECTION_API_URL_V2;
+        }
+
         if (!apiUrl) {
             return NextResponse.json({ error: 'API URL not configured' }, { status: 500 });
         }
@@ -28,6 +35,7 @@ export async function POST(request: Request) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.FACE_DETECTION_API_KEY}`,
             },
             body: JSON.stringify(payload),
         });

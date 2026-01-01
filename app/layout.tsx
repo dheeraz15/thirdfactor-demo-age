@@ -19,6 +19,8 @@ export const metadata: Metadata = {
   description: "Experience the future of age verification",
   icons: {
     icon: "/thirdfactor-mark-transparent.png",
+    shortcut: "/thirdfactor-mark-transparent.png",
+    apple: "/thirdfactor-mark-transparent.png",
   },
 };
 

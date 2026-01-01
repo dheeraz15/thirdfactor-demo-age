@@ -2,15 +2,21 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import emotionsData from '../../emotions.json';
+import ageFeedbackData from '../../age-feedback.json';
 
-type Step = 'welcome' | 'prep' | 'capture' | 'result';
+type Step = 'welcome' | 'prep' | 'capture' | 'result' | 'settings';
 
 export default function DemoPage() {
     const [step, setStep] = useState<Step>('welcome');
     const [images, setImages] = useState<string[]>([]);
     const [statusMessage, setStatusMessage] = useState<string>('Initializing camera...');
     const [captureProgress, setCaptureProgress] = useState(0);
-    const [ageData, setAgeData] = useState<{ age: number; gender: string } | null>(null);
+    const [ageData, setAgeData] = useState<{ age: number; gender: string; emotion?: string } | null>(null);
+    const [celebData, setCelebData] = useState<{ name: string; image: string } | null>(null);
+    const [feedbackMode, setFeedbackMode] = useState<'roast' | 'flattery'>('flattery');
+    const [apiVersion, setApiVersion] = useState<'v1' | 'v2'>('v1');
+    const [gimmMode, setGimmMode] = useState<boolean>(true);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -52,7 +58,7 @@ export default function DemoPage() {
 
                 <button
                     onClick={() => setStep('prep')}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-2xl transition-all active:scale-95"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-2xl transition-all active:scale-95 mb-6 opacity-90 hover:opacity-100"
                 >
                     Continue
                 </button>
@@ -62,9 +68,99 @@ export default function DemoPage() {
                 </p>
             </div>
 
-            <div className="pb-4 flex flex-col items-center gap-2 text-xs text-gray-400 transition-opacity duration-1000 delay-500">
+            <div className="pb-4 flex flex-col items-center gap-2 text-xs text-gray-400">
+                <button
+                    onClick={() => setStep('settings')}
+                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors mb-2"
+                >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </button>
                 <span className="font-medium tracking-wide">Secured by</span>
                 <Image src="/logopure.png" width={100} height={24} alt="Third Factor" className="h-5 w-auto opacity-40 grayscale hover:grayscale-0 transition-all duration-300" />
+            </div>
+        </div>
+    );
+
+    const SettingsStep = () => (
+        <div className="flex flex-col items-center min-h-screen p-6 bg-white text-black animate-in fade-in slide-in-from-right-4 duration-500">
+            {/* Header */}
+            <div className="w-full max-w-md flex items-center justify-between mb-8 pt-4">
+                <button
+                    onClick={() => setStep('welcome')}
+                    className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                    <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <h1 className="text-xl font-bold">Settings</h1>
+                <div className="w-10"></div>
+            </div>
+
+            <div className="w-full max-w-md space-y-6">
+                {/* Settings Group */}
+                <div className="flex flex-col space-y-4">
+
+                    {/* API Version Toggle */}
+                    <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium text-gray-700">API Version</span>
+                            <div className="flex items-center bg-white rounded-lg p-1 border border-gray-100 shadow-sm">
+                                <button
+                                    onClick={() => setApiVersion('v1')}
+                                    className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${apiVersion === 'v1' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                >
+                                    V1
+                                </button>
+                                <button
+                                    onClick={() => setApiVersion('v2')}
+                                    className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${apiVersion === 'v2' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                >
+                                    V2
+                                </button>
+                            </div>
+                        </div>
+                        <p className="text-xs text-gray-400">
+                            Select the endpoint version for face detection ({apiVersion === 'v1' ? 'Standard' : 'Experimental'}).
+                        </p>
+                    </div>
+
+                    {/* Gimm Mode Toggle */}
+                    <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium text-gray-700">GIMM Mode</span>
+                            <button
+                                onClick={() => setGimmMode(!gimmMode)}
+                                className={`w-14 h-8 rounded-full transition-colors duration-300 relative focus:outline-none ${gimmMode ? 'bg-blue-600' : 'bg-gray-300'}`}
+                            >
+                                <div className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-white shadow-sm transition-transform duration-300 ${gimmMode ? 'translate-x-6' : 'translate-x-0'}`} />
+                            </button>
+                        </div>
+                        <p className="text-xs text-gray-400 mb-4">
+                            Enable extended features like roast/flattery, emotion detection, and age feedback.
+                        </p>
+
+                        {/* Roast vs Flattery Toggle (Nested) */}
+                        <div className={`transition-all duration-300 overflow-hidden ${gimmMode ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
+                            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                                <span className="text-sm text-gray-600">Feedback Type</span>
+                                <div className="flex items-center space-x-3 bg-white px-3 py-1.5 rounded-xl border border-gray-100">
+                                    <span className={`text-xs font-bold transition-colors ${feedbackMode === 'flattery' ? 'text-gray-300' : 'text-red-500'}`}>Roast</span>
+                                    <button
+                                        onClick={() => setFeedbackMode(prev => prev === 'flattery' ? 'roast' : 'flattery')}
+                                        className={`relative w-10 h-5 rounded-full transition-colors duration-300 focus:outline-none ${feedbackMode === 'flattery' ? 'bg-emerald-500' : 'bg-red-500'}`}
+                                    >
+                                        <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${feedbackMode === 'flattery' ? 'translate-x-5' : 'translate-x-0'}`} />
+                                    </button>
+                                    <span className={`text-xs font-bold transition-colors ${feedbackMode === 'flattery' ? 'text-emerald-600' : 'text-gray-300'}`}>Flattery</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -76,32 +172,53 @@ export default function DemoPage() {
                     <div className="h-full bg-black w-1/3 rounded-full"></div>
                 </div>
 
-                <h1 className="text-2xl font-bold text-left mb-4">Prepare for the camera</h1>
-                <p className="text-left text-gray-600 mb-8">
-                    In a moment, we'll ask you to take a selfie by smiling, this will let us know it's really you
-                </p>
+                <h1 className="text-3xl font-bold text-left mb-6">Prepare for the camera</h1>
 
-                {/* Illustration */}
-                <div className="relative w-full h-64 bg-slate-50 rounded-3xl mb-8 flex items-center justify-center overflow-hidden border border-slate-100">
-                    {/* Simple CSS Phone Illustration */}
-                    <div className="relative w-32 h-56 bg-white border-4 border-gray-800 rounded-[2.5rem] flex flex-col items-center justify-center p-2">
-                        <div className="w-16 h-4 bg-gray-800 rounded-b-xl absolute top-0 left-1/2 -translate-x-1/2"></div>
-                        <div className="w-20 h-20 rounded-full border-2 border-blue-500/20 flex items-center justify-center">
-                            <svg className="w-10 h-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
+                {/* Animation Container */}
+                <div className="relative w-full h-80 bg-slate-50 rounded-3xl mb-10 flex items-center justify-center overflow-hidden border border-slate-100">
+                    <div className="w-64 h-64 relative">
+                        <svg viewBox="0 0 200 200" className="w-full h-full">
+                            <defs>
+                                <style>{`
+                                    .face-move {
+                                        animation: moveFace 3s infinite ease-in-out;
+                                    }
+                                    @keyframes moveFace {
+                                        0%, 100% { transform: translateX(0); }
+                                        25% { transform: translateX(15px); }
+                                        75% { transform: translateX(-15px); }
+                                    }
+                                `}</style>
+                            </defs>
+                            {/* Head Outline */}
+                            <path d="M100 20C55.8172 20 20 55.8172 20 100C20 144.183 55.8172 180 100 180C144.183 180 180 144.183 180 100C180 55.8172 144.183 20 100 20Z" stroke="#334155" strokeWidth="6" fill="white" />
+
+                            {/* Animated Face Features */}
+                            <g className="face-move">
+                                {/* Eyes */}
+                                <circle cx="70" cy="85" r="8" fill="#334155" />
+                                <circle cx="130" cy="85" r="8" fill="#334155" />
+                                {/* Nose */}
+                                <path d="M100 85V115" stroke="#334155" strokeWidth="6" strokeLinecap="round" />
+                                {/* Mouth */}
+                                <path d="M70 145C70 145 85 160 100 160C115 160 130 145 130 145" stroke="#334155" strokeWidth="6" strokeLinecap="round" fill="none" />
+                            </g>
+                        </svg>
                     </div>
                 </div>
 
-                <div className="space-y-4 text-left text-sm text-gray-600">
-                    <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                        <SunIcon className="w-6 h-6 text-gray-400" />
-                        <span>First, position your face in the frame</span>
+                <div className="space-y-6 text-left text-lg text-gray-700">
+                    <div className="flex items-center space-x-4 p-4 rounded-xl hover:bg-gray-50 transition-colors">
+                        <div className="p-3 bg-blue-100 rounded-full text-blue-600">
+                            <SunIcon className="w-8 h-8" />
+                        </div>
+                        <span className="font-semibold">Position your face in the frame</span>
                     </div>
-                    <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                        <EyeIcon className="w-6 h-6 text-gray-400" />
-                        <span>Then, turn your head slowly to both sides</span>
+                    <div className="flex items-center space-x-4 p-4 rounded-xl hover:bg-gray-50 transition-colors">
+                        <div className="p-3 bg-blue-100 rounded-full text-blue-600">
+                            <EyeIcon className="w-8 h-8" />
+                        </div>
+                        <span className="font-semibold">Turn your head slowly to both sides</span>
                     </div>
                 </div>
             </div>
@@ -340,21 +457,24 @@ export default function DemoPage() {
                 const isGoodSize = faceWidth > 0.15 && faceWidth < 0.75;
 
                 if (isCentered && isGoodSize) {
-                    setStatusMessage("Hold still...");
-
                     // Capture front photos
-                    if (now % 400 < 50 && capturedPhotosRef.current.front.length < 3) {
+                    const requiredPhotos = 10;
+                    if (capturedPhotosRef.current.front.length < requiredPhotos) {
                         const frame = captureFrame();
                         if (frame) capturedPhotosRef.current.front.push(frame);
-                    }
-
-                    if (!stageTimerRef.current) {
-                        stageTimerRef.current = now;
-                    } else if (now - stageTimerRef.current > 800) {
-                        advanceStage('right');
+                        setStatusMessage(`Scanning... ${Math.floor((capturedPhotosRef.current.front.length / requiredPhotos) * 100)}%`);
+                    } else {
+                        setStatusMessage("Hold still...");
+                        if (!stageTimerRef.current) {
+                            stageTimerRef.current = now;
+                        } else if (now - stageTimerRef.current > 500) {
+                            advanceStage('right');
+                        }
                     }
                 } else {
                     stageTimerRef.current = null;
+                    // Optional: Reset if they move too much? 
+                    // For now, let's keep what we have to be less annoying
                     if (faceWidth < 0.15) setStatusMessage("Come closer");
                     else if (faceWidth > 0.75) setStatusMessage("Move back");
                     else setStatusMessage("Look straight ahead");
@@ -365,10 +485,6 @@ export default function DemoPage() {
                 const isTurnedRight = smoothedAngle > 30;
 
                 if (isTurnedRight) {
-                    if (!capturedPhotosRef.current.right) {
-                        capturedPhotosRef.current.right = captureFrame();
-                    }
-
                     if (!stageTimerRef.current) stageTimerRef.current = now;
                     else if (now - stageTimerRef.current > 200) { // Fast reaction
                         advanceStage('left');
@@ -383,10 +499,6 @@ export default function DemoPage() {
                 const isTurnedLeft = smoothedAngle < -30;
 
                 if (isTurnedLeft) {
-                    if (!capturedPhotosRef.current.left) {
-                        capturedPhotosRef.current.left = captureFrame();
-                    }
-
                     if (!stageTimerRef.current) stageTimerRef.current = now;
                     else if (now - stageTimerRef.current > 200) {
                         advanceStage('complete');
@@ -418,33 +530,25 @@ export default function DemoPage() {
         const captureSequence = async () => {
             processingRef.current = false;
 
-            // Prepare final payload: 3 front, 1 right, 1 left
-            let finalFrames: string[] = [];
+            // Prepare final payload: 10 front images
+            let finalFrames: string[] = [...capturedPhotosRef.current.front];
 
-            // 1. Front
-            finalFrames.push(...capturedPhotosRef.current.front);
-            // Fallback if missing, grab current
+            // Fallback if missing (shouldn't happen with new logic, but safe to have)
             const currentFrame = captureFrame();
 
-            // If we have nothing at all, we must abort or just try to capture now
-            if (!currentFrame && finalFrames.length === 0) {
+            // Fill to 10 if needed
+            while (finalFrames.length < 10) {
+                finalFrames.push(currentFrame || finalFrames[0] || "");
+            }
+
+            // Filter out any empty strings if something went wrong
+            finalFrames = finalFrames.filter(f => f);
+
+            if (finalFrames.length === 0) {
                 setStatusMessage("Capture failed");
                 setIsAnalyzing(false);
                 return;
             }
-
-            // Fill front to 3
-            while (finalFrames.length < 3) {
-                finalFrames.push(currentFrame || finalFrames[0]);
-            }
-
-            // 2. Right
-            if (capturedPhotosRef.current.right) finalFrames.push(capturedPhotosRef.current.right);
-            else finalFrames.push(currentFrame || finalFrames[0]);
-
-            // 3. Left
-            if (capturedPhotosRef.current.left) finalFrames.push(capturedPhotosRef.current.left);
-            else finalFrames.push(currentFrame || finalFrames[0]);
 
             // Show one of the images locally
             setCapturedImage(finalFrames[0]);
@@ -453,26 +557,32 @@ export default function DemoPage() {
             setStatusMessage("Verifying...");
 
             try {
-                const response = await fetch('/api/detect-face', {
+                // Parallel requests
+                const facePromise = fetch(`/api/detect-face?version=${apiVersion}`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(finalFrames),
                 });
 
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                const celebPromise = fetch('/api/match-celebrity', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: finalFrames[0] }),
+                });
+
+                const [faceRes, celebRes] = await Promise.all([facePromise, celebPromise]);
+
+                if (!faceRes.ok) {
+                    throw new Error('Face detection API failed');
                 }
 
-                const data = await response.json();
+                const faceData = await faceRes.json();
 
-                if (data.result === false) {
+                // Handle basic errors from face API
+                if (faceData.result === false) {
                     setStatusMessage("ohh ohh; your face is too good to be dectected");
                     setIsAnalyzing(false);
-                    await delay(3000); // Show message for 3 seconds
-
-                    // Reset to try again
+                    await delay(3000);
                     setCapturedImage(null);
                     setStage('align');
                     stageRef.current = 'align';
@@ -480,21 +590,37 @@ export default function DemoPage() {
                     predictLoop();
                     return;
                 }
+                if (faceData.error) throw new Error(faceData.error);
 
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-
-                // Map the response to our state
+                // Process Face Data
                 setAgeData({
-                    age: data.age,
-                    gender: data.gender
+                    age: faceData.age,
+                    gender: faceData.gender,
+                    emotion: faceData.emotion
                 });
 
-                if (data.success_photo) {
-                    setImages([data.success_photo]);
+                if (faceData.success_photo) {
+                    setImages([faceData.success_photo]);
                 } else {
                     setImages(finalFrames);
+                }
+
+                // Process Celeb Data (Best effort)
+                try {
+                    if (celebRes.ok) {
+                        const celebJson = await celebRes.json();
+                        // Expected format: { "Brad Pitt": "base64..." }
+                        const keys = Object.keys(celebJson);
+                        if (keys.length > 0) {
+                            const name = keys[0];
+                            const image = celebJson[name];
+                            if (typeof image === 'string' && image.startsWith('data:image')) {
+                                setCelebData({ name, image });
+                            }
+                        }
+                    }
+                } catch (celebErr) {
+                    console.error("Celeb match failed", celebErr);
                 }
 
                 setStep('result');
@@ -630,7 +756,8 @@ export default function DemoPage() {
                         </div>
 
                         {/* Video Circle */}
-                        <div className={`w-64 h-64 rounded-full overflow-hidden border-[6px] border-white relative z-10 bg-white shadow-xl transition-transform duration-500 ${isAnalyzing ? 'scale-95' : 'scale-100'}`}>
+                        {/* Video Circle */}
+                        <div className={`w-64 h-64 rounded-full overflow-hidden border-[6px] border-white relative z-10 bg-white transition-transform duration-500 ${isAnalyzing ? 'scale-95' : 'scale-100'}`}>
                             {capturedImage && isAnalyzing ? (
                                 <div className="w-full h-full relative">
                                     <Image src={capturedImage} alt="Analysis" fill className="object-cover blur-sm opacity-50" />
@@ -672,57 +799,170 @@ export default function DemoPage() {
 
     const ResultStep = () => {
         const [Lottie, setLottie] = useState<any>(null);
+        const [displayMessages, setDisplayMessages] = useState<{ emotionMsg: string, ageMsg: string } | null>(null);
 
         useEffect(() => {
             import('lottie-react').then(mod => setLottie(() => mod.default));
-        }, []);
+
+            if (ageData) {
+                // 1. Get Emotion Message
+                let emotionMsg = "";
+                if (ageData.emotion) {
+                    const rawEmotion = ageData.emotion;
+                    const titleCaseEmotion = rawEmotion.charAt(0).toUpperCase() + rawEmotion.slice(1).toLowerCase();
+                    const messages = (emotionsData as any)[rawEmotion] || (emotionsData as any)[titleCaseEmotion];
+
+                    if (messages) {
+                        emotionMsg = messages[Math.floor(Math.random() * messages.length)];
+                    }
+                }
+
+                // 2. Get Age Feedback Message
+                let ageMsg = "";
+                const feedbackCategory = (ageFeedbackData as any)[feedbackMode];
+                if (feedbackCategory) {
+                    const ageGroup = feedbackCategory.find((group: any) => ageData.age >= group.minAge && ageData.age <= group.maxAge);
+                    if (ageGroup && ageGroup.messages) {
+                        ageMsg = ageGroup.messages[Math.floor(Math.random() * ageGroup.messages.length)];
+                    } else {
+                        // Fallback if age is out of bounds (e.g. > 100) or default
+                        ageMsg = feedbackMode === 'roast' ? "You're off the charts!" : "You are purely timeless.";
+                    }
+                }
+
+                setDisplayMessages({ emotionMsg, ageMsg });
+            }
+        }, [ageData]);
+
+        const getEmojiForEmotion = (emotion?: string) => {
+            if (!emotion) return "😐";
+            const e = emotion.toLowerCase();
+            if (e.includes('happy')) return "😊";
+            if (e.includes('sad')) return "😢";
+            if (e.includes('angry')) return "😠";
+            if (e.includes('disgust')) return "🤢";
+            if (e.includes('fear')) return "😨";
+            if (e.includes('surprise')) return "😲";
+            if (e.includes('neutral')) return "😐";
+            return "🙂";
+        };
 
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center animate-in fade-in zoom-in duration-500 bg-white text-black">
-                <div className="w-48 h-48 mb-6">
-                    {Lottie && (
-                        <Lottie
-                            animationData={require('../../public/Success.json')}
-                            loop={false}
-                            className="w-full h-full"
-                        />
-                    )}
-                </div>
+            <div className="flex flex-col items-center justify-center h-screen w-full overflow-hidden p-4 bg-white text-black font-sans">
 
-                <h1 className="text-3xl font-bold mb-2">Session Complete</h1>
-                <p className="text-gray-500 mb-8">Data captured successfully</p>
+                <div className="flex flex-col items-center justify-between h-full max-h-[800px] w-full max-w-md py-2">
+                    {/* Top Content Group */}
+                    <div className="flex flex-col items-center w-full space-y-2">
+                        {/* 1. Lottie */}
+                        <div className="w-20 h-20">
+                            {Lottie && (
+                                <Lottie
+                                    animationData={require('../../public/Success.json')}
+                                    loop={false}
+                                    className="w-full h-full"
+                                />
+                            )}
+                        </div>
 
-                <div className="w-full max-w-sm bg-gray-50 rounded-2xl p-6 mb-8 border border-gray-100">
-                    <div className="flex items-center justify-between py-3 border-b border-gray-200/60">
-                        <span className="text-gray-500 font-medium">Estimated Age</span>
-                        <span className="text-xl font-bold text-gray-900">{ageData?.age}</span>
-                    </div>
-                    <div className="flex items-center justify-between py-3">
-                        <span className="text-gray-500 font-medium">Estimated Gender</span>
-                        <span className="text-xl font-bold text-gray-900">{ageData?.gender}</span>
-                    </div>
-                </div>
+                        {/* 2. Title */}
+                        <h1 className="text-lg font-bold text-emerald-600 tracking-tight">Session Completed</h1>
 
-                {images.length > 0 && (
-                    <div className="flex gap-2 mb-8 overflow-x-auto max-w-full p-2">
-                        {images.map((img, i) => (
-                            <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 shrink-0">
-                                <Image src={img} alt="capture" fill className="object-cover" />
+                        {/* 3. Emotion Box */}
+                        {gimmMode && displayMessages?.emotionMsg && (
+                            <div className="w-full bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-center space-x-3 shadow-sm">
+                                <div className="w-10 h-10 flex items-center justify-center bg-white rounded-full text-2xl border border-emerald-100 shrink-0 shadow-sm">
+                                    {getEmojiForEmotion(ageData?.emotion)}
+                                </div>
+                                <p className="text-sm font-semibold text-emerald-900 leading-snug tracking-wide text-left flex-1">
+                                    {displayMessages.emotionMsg}
+                                </p>
                             </div>
-                        ))}
+                        )}
                     </div>
-                )}
 
-                <button
-                    onClick={() => {
-                        setImages([]);
-                        setAgeData(null);
-                        setStep('welcome');
-                    }}
-                    className="w-full max-w-xs px-8 py-4 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all active:scale-95"
-                >
-                    Start Over
-                </button>
+                    {/* 4. Main Card - Centered */}
+                    <div className="w-full bg-white rounded-2xl p-5 border border-gray-100 relative overflow-hidden flex-shrink-0">
+
+                        {/* Images & Celeb */}
+                        {/* Images & Celeb */}
+                        <div className="flex flex-col items-center mb-4">
+                            <div className="flex items-center justify-center space-x-2 mb-2">
+                                {/* User Image */}
+                                {images.length > 0 && (
+                                    <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md z-10">
+                                        <Image src={images[0]} alt="User" fill className="object-cover" />
+                                    </div>
+                                )}
+
+                                {/* Link/Combine Icon or Overlap */}
+                                {celebData && (
+                                    <>
+                                        <div className="text-gray-300">
+                                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                                        </div>
+                                        {/* Celeb Image */}
+                                        <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md z-10">
+                                            <Image src={celebData.image} alt={celebData.name} fill className="object-cover" />
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            {celebData ? (
+                                <div className="text-center">
+                                    <p className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold mb-1">Celebrity Look-alike</p>
+                                    <h3 className="text-lg font-semibold text-gray-900 tracking-tight">{celebData.name}</h3>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-gray-400 italic">No celebrity match found</p>
+                            )}
+                        </div>
+
+                        {/* Stats Bars */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <span className="text-gray-500 font-medium text-xs">Estimated Age</span>
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                        <div className="h-full bg-blue-600 rounded-full" style={{ width: `${Math.min((ageData?.age || 0), 100)}%` }}></div>
+                                    </div>
+                                    <span className="text-base font-bold text-gray-900 w-6 text-right">{ageData?.age}</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+                                <span className="text-gray-500 font-medium text-xs">Gender</span>
+                                <span className="text-sm font-semibold text-gray-900 bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100">
+                                    {ageData?.gender || "Unknown"}
+                                </span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {/* Bottom Content Group */}
+                    <div className="w-full space-y-2">
+                        {/* 5. Age Feedback */}
+                        {gimmMode && displayMessages?.ageMsg && (
+                            <div className={`rounded-xl p-4 text-center border-2 ${feedbackMode === 'roast' ? 'bg-rose-50 border-rose-100 text-rose-900' : 'bg-blue-50 border-blue-100 text-blue-900'}`}>
+                                <p className="text-base font-bold leading-tight">
+                                    "{displayMessages.ageMsg}"
+                                </p>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={() => {
+                                setImages([]);
+                                setAgeData(null);
+                                setCelebData(null);
+                                setStep('welcome');
+                            }}
+                            className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-semibold text-base transition-all active:scale-95"
+                        >
+                            Start Over
+                        </button>
+                    </div>
+                </div>
             </div>
         );
     };
@@ -730,6 +970,7 @@ export default function DemoPage() {
     return (
         <main className="min-h-screen bg-white font-sans selection:bg-blue-100">
             {step === 'welcome' && <WelcomeStep />}
+            {step === 'settings' && <SettingsStep />}
             {step === 'prep' && <PrepStep />}
             {step === 'capture' && <CaptureStep />}
             {step === 'result' && <ResultStep />}

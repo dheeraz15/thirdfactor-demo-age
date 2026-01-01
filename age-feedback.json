@@ -1,0 +1,116 @@
+{
+    "roast": [
+        {
+            "minAge": 0,
+            "maxAge": 20,
+            "messages": [
+                "You're so young, you probably still think adulthood is fun.",
+                "Enjoy your metabolism while it lasts, kid.",
+                "Your biggest problem right now is probably battery percentage.",
+                "You look like you just discovered what taxes are.",
+                "Zoomer energy detected. No cap."
+            ]
+        },
+        {
+            "minAge": 21,
+            "maxAge": 30,
+            "messages": [
+                "Quarter-life crisis mode activated.",
+                "You're at that age where a night out takes three days to recover.",
+                "Still trying to figure it out? Don't worry, nobody else has either.",
+                "You look like you need a coffee. Or three.",
+                "Welcome to the age of 'Let's circle back to that'."
+            ]
+        },
+        {
+            "minAge": 31,
+            "maxAge": 40,
+            "messages": [
+                "You're officially in the 'I have a favorite spatula' phase of life.",
+                "That back pain? Yeah, that's just a feature now.",
+                "You look like you enjoy a good documentary.",
+                "30s: When 'sleeping in' means waking up at 8 AM.",
+                "You're aging like... well, you're aging."
+            ]
+        },
+        {
+            "minAge": 41,
+            "maxAge": 50,
+            "messages": [
+                "You've reached the age of unconditional groan-when-standing-up.",
+                "You look like you have strong opinions on lawn care.",
+                "Mid-life makeover time? Just asking.",
+                "Reading glasses are in your near future. Very near.",
+                "You're vintage now. Let's call it 'classic'."
+            ]
+        },
+        {
+            "minAge": 51,
+            "maxAge": 100,
+            "messages": [
+                "You're not old, you're just... historically significant.",
+                "At this point, 'nap time' is the highlight of the day.",
+                "You've seen things. Mostly reruns, but still.",
+                "Respect your elders! Wait, that's you.",
+                "You're aging like a fine wine... or maybe just vinegar."
+            ]
+        }
+    ],
+    "flattery": [
+        {
+            "minAge": 0,
+            "maxAge": 20,
+            "messages": [
+                "You're glowing with youthful energy!",
+                "The world is your oyster, and you look ready to conquer it.",
+                "Fresh faced and fabulous!",
+                "You represent the future, and it looks bright.",
+                "So much potential in one picture!"
+            ]
+        },
+        {
+            "minAge": 21,
+            "maxAge": 30,
+            "messages": [
+                "You look absolutely in your prime!",
+                "Stunning! 20s never looked so good.",
+                "Radiating confidence and charm.",
+                "You've got that perfect mix of youth and wisdom.",
+                "Simply captivating!"
+            ]
+        },
+        {
+            "minAge": 31,
+            "maxAge": 40,
+            "messages": [
+                "30s? You look like you're just getting started!",
+                "Aging? What aging? You look timeless.",
+                "Sophisticated, elegant, and glowing.",
+                "You're definitive proof that life gets better with age.",
+                "Looking sharp and thriving!"
+            ]
+        },
+        {
+            "minAge": 41,
+            "maxAge": 50,
+            "messages": [
+                "You look fantastic! 40 is the new 20.",
+                "Grace and elegance defined.",
+                "You have a magnetic presence.",
+                "A perfect blend of experience and beauty.",
+                "You light up the screen!"
+            ]
+        },
+        {
+            "minAge": 51,
+            "maxAge": 100,
+            "messages": [
+                "You are an absolute classic beauty.",
+                "Wisdom and grace look wonderful on you.",
+                "You look distinguished and full of life.",
+                "Timeless elegance at its finest.",
+                "You simply radiate warmth and kindness."
+            ]
+        }
+    ]
+}
