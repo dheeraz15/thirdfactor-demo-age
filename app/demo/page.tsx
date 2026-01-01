@@ -182,6 +182,7 @@ export default function DemoPage() {
         const [isReady, setIsReady] = useState(false);
         const [isAnalyzing, setIsAnalyzing] = useState(false);
         const [capturedImage, setCapturedImage] = useState<string | null>(null);
+        const [isError, setIsError] = useState(false);
 
         // Visual State: 0-360 range for renderer simplicity, but logic handles it
         const [currentFaceAngle, setCurrentFaceAngle] = useState<number>(0);
@@ -526,9 +527,11 @@ export default function DemoPage() {
 
                 // Handle basic errors from face API
                 if (faceData.result === false) {
-                    setStatusMessage("ohh ohh; your face is too good to be dectected");
+                    setStatusMessage("ohh ohh; your face is too good to be detected");
                     setIsAnalyzing(false);
-                    await delay(3000);
+                    setIsError(true);
+                    await delay(3500);
+                    setIsError(false);
                     setCapturedImage(null);
                     setStage('align');
                     stageRef.current = 'align';
@@ -708,8 +711,26 @@ export default function DemoPage() {
 
                         {/* Video Circle */}
                         {/* Video Circle */}
-                        <div className={`w-64 h-64 rounded-full overflow-hidden border-[6px] border-white relative z-10 bg-white transition-transform duration-500 ${isAnalyzing ? 'scale-95' : 'scale-100'}`}>
-                            {capturedImage && isAnalyzing ? (
+                        <div className={`w-64 h-64 rounded-full overflow-hidden border-[6px] border-white relative z-10 bg-white transition-all duration-500 ${isAnalyzing ? 'scale-95' : 'scale-100'} ${isError ? 'border-rose-200' : ''}`}>
+                            {isError ? (
+                                <div className="w-full h-full relative bg-gradient-to-br from-rose-50 to-orange-50 flex items-center justify-center">
+                                    <div className="text-center space-y-3 animate-in fade-in zoom-in-95 duration-500">
+                                        <div className="relative w-20 h-20 mx-auto">
+                                            <svg className="w-full h-full animate-bounce" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <circle cx="12" cy="12" r="10" stroke="#fb923c" strokeWidth="2" fill="#fff7ed" opacity="0.5" />
+                                                <path d="M8 14s1.5 2 4 2 4-2 4-2" stroke="#fb923c" strokeWidth="2" strokeLinecap="round" />
+                                                <circle cx="9" cy="9" r="1.5" fill="#fb923c" />
+                                                <circle cx="15" cy="9" r="1.5" fill="#fb923c" />
+                                            </svg>
+                                            <div className="absolute inset-0 bg-orange-400/20 rounded-full blur-xl animate-pulse"></div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-xs font-semibold text-orange-600 tracking-wide">Detection Error</p>
+                                            <p className="text-[10px] text-orange-500/80 px-4">Retrying...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : capturedImage && isAnalyzing ? (
                                 <div className="w-full h-full relative">
                                     <Image src={capturedImage} alt="Analysis" fill className="object-cover blur-sm opacity-50" />
                                     <div className="absolute inset-0 bg-emerald-500/10" />
@@ -725,7 +746,7 @@ export default function DemoPage() {
                         </div>
 
                         {/* Status Overlay */}
-                        {isAnalyzing && (
+                        {isAnalyzing && !isError && (
                             <div className="absolute inset-0 z-20 flex items-center justify-center">
                                 <div className="bg-white/90 backdrop-blur px-4 py-2 rounded-full shadow-lg">
                                     <span className="text-emerald-600 font-semibold animate-pulse">Processing</span>
@@ -736,7 +757,7 @@ export default function DemoPage() {
 
                     {/* Instruction Text */}
                     <div className="text-center px-6 h-20">
-                        <h2 className={`text-3xl font-bold tracking-tight text-slate-900 transition-all duration-300 ${isAnalyzing ? 'scale-95 opacity-50' : 'scale-100'}`}>
+                        <h2 className={`text-3xl font-bold tracking-tight transition-all duration-300 ${isError ? 'text-orange-600 scale-105' : 'text-slate-900'} ${isAnalyzing && !isError ? 'scale-95 opacity-50' : 'scale-100'}`}>
                             {statusMessage}
                         </h2>
                     </div>

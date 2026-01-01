@@ -29,14 +29,21 @@ export async function POST(request: Request) {
         }
 
         // The user verified the format should be an array of base64 strings WITH header.
-        // Example: ["data:image/jpeg;base64,..."]
+        // Example: ["data:image/jpeg;base64,...]
+
+        // Build headers - only include Authorization for v1
+        const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+        };
+
+        // Only add Bearer token for v1
+        if (version !== 'v2') {
+            headers['Authorization'] = `Bearer ${process.env.FACE_DETECTION_API_KEY}`;
+        }
 
         const response = await fetch(apiUrl, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.FACE_DETECTION_API_KEY}`,
-            },
+            headers,
             body: JSON.stringify(payload),
         });
 
