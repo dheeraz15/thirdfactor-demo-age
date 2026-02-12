@@ -108,15 +108,15 @@ export default function DemoPage() {
     const PrepStep = () => (
         <div className="flex flex-col items-center justify-between min-h-screen p-6 text-center animate-in fade-in slide-in-from-right-4 duration-500 bg-white text-black">
             <div className="w-full max-w-md pt-16">
-                <div className="w-full h-1 bg-gray-100 rounded-full mb-8 overflow-hidden">
+                <div className="w-full h-1 bg-gray-100 rounded-full mb-6 overflow-hidden">
                     <div className="h-full bg-blue-600 w-1/3 rounded-full"></div>
                 </div>
 
-                <h1 className="text-3xl font-bold text-left mb-6">{t.prepareCamera}</h1>
+                <h1 className="text-2xl font-bold text-left mb-4">{t.prepareCamera}</h1>
 
                 {/* Animation Container */}
-                <div className="relative w-full h-80 bg-slate-50 rounded-3xl mb-10 flex items-center justify-center overflow-hidden border border-slate-100">
-                    <div className="w-64 h-64 relative">
+                <div className="relative w-full h-64 bg-slate-50 rounded-3xl mb-6 flex items-center justify-center overflow-hidden border border-slate-100">
+                    <div className="w-56 h-56 relative">
                         <svg viewBox="0 0 200 200" className="w-full h-full">
                             <defs>
                                 <style>{`
@@ -147,25 +147,25 @@ export default function DemoPage() {
                     </div>
                 </div>
 
-                <div className="space-y-6 text-left text-lg text-gray-700">
-                    <div className="flex items-center space-x-4 p-4 rounded-xl hover:bg-gray-50 transition-colors">
-                        <div className="p-3 bg-blue-100 rounded-full text-blue-600">
-                            <SunIcon className="w-8 h-8" />
+                <div className="space-y-3 text-left text-lg text-gray-700">
+                    <div className="flex items-center space-x-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
+                        <div className="p-2.5 bg-blue-100 rounded-full text-blue-600">
+                            <SunIcon className="w-6 h-6" />
                         </div>
-                        <span className="font-semibold">{t.positionFace}</span>
+                        <span className="font-medium text-base">{t.positionFace}</span>
                     </div>
-                    <div className="flex items-center space-x-4 p-4 rounded-xl hover:bg-gray-50 transition-colors">
-                        <div className="p-3 bg-blue-100 rounded-full text-blue-600">
-                            <EyeIcon className="w-8 h-8" />
+                    <div className="flex items-center space-x-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
+                        <div className="p-2.5 bg-blue-100 rounded-full text-blue-600">
+                            <EyeIcon className="w-6 h-6" />
                         </div>
-                        <span className="font-semibold">{t.turnHead}</span>
+                        <span className="font-medium text-base">{t.turnHead}</span>
                     </div>
                 </div>
             </div>
 
             <button
                 onClick={() => setStep('capture')}
-                className="w-full max-w-md bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-2xl mt-8 transition-all active:scale-95"
+                className="w-full max-w-md bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-2xl mt-4 transition-all active:scale-95 mb-4"
             >
                 {t.imReady}
             </button>
