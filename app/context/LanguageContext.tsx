@@ -57,10 +57,10 @@ const translations: Record<Language, Translations> = {
         footerRights: "Third Factor. All rights reserved.",
 
         // Demo page - Welcome
-        demoVerification: "Demo Verification",
+        demoVerification: "Verify Identity",
         completeSteps: "Complete these steps to verify your identity",
         stepOne: "Step 1",
-        ageEstimation: "Age estimation",
+        ageEstimation: "Face Verification",
         continue: "Continue",
         privacyNotice: "Privacy Notice",
         securedBy: "Secured by",

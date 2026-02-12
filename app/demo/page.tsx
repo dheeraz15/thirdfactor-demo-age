@@ -107,7 +107,7 @@ export default function DemoPage() {
 
     const PrepStep = () => (
         <div className="flex flex-col items-center justify-between min-h-screen p-6 text-center animate-in fade-in slide-in-from-right-4 duration-500 bg-white text-black">
-            <div className="w-full max-w-md pt-8">
+            <div className="w-full max-w-md pt-16">
                 <div className="w-full h-1 bg-gray-100 rounded-full mb-8 overflow-hidden">
                     <div className="h-full bg-blue-600 w-1/3 rounded-full"></div>
                 </div>
